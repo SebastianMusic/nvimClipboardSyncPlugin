@@ -1,0 +1,41 @@
+--    _____ ______________  ______
+--   / ___// ____/_  __/ / / / __ \
+--   \__ \/ __/   / / / / / / /_/ /
+--  ___/ / /___  / / / /_/ / ____/
+-- /____/_____/ /_/  \____/_/
+--
+--
+-- Establish tmp directory path varible
+-- Check if tmp directory exits
+-- Generate a uuid
+-- check if uuid exists in tmp directory
+-- if it does then try again
+
+--    ____  _   __   __  _____    _   ____ __
+--   / __ \/ | / /   \ \/ /   |  / | / / //_/
+--  / / / /  |/ /     \  / /| | /  |/ / ,<
+-- / /_/ / /|  /      / / ___ |/ /|  / /| |
+-- \____/_/ |_/      /_/_/  |_/_/ |_/_/ |_|
+
+-- get current time
+-- save time on yank
+-- Create Json structure with time and clipboard contents
+-- send to daemon
+--    ____  _   __   ____  _________    ____
+--   / __ \/ | / /  / __ \/ ____/   |  / __ \
+--  / / / /  |/ /  / /_/ / __/ / /| | / / / /
+-- / /_/ / /|  /  / _, _/ /___/ ___ |/ /_/ /
+-- \____/_/ |_/  /_/ |_/_____/_/  |_/_____/
+--
+-- check if timestamp
+-- check if the contents are newer thank last yank
+-- if they are newer set the clipboard register to the contents if not discard them
+--
+--
+--    ________    _________    _   __   __  ______
+--   / ____/ /   / ____/   |  / | / /  / / / / __ \
+--  / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
+-- / /___/ /___/ /___/ ___ |/ /|  /  / /_/ / ____/
+-- \____/_____/_____/_/  |_/_/ |_/   \____/_/
+--
+-- Remove named pipe from tmp diretory
