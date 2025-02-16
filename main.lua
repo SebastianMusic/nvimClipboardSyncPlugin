@@ -1,3 +1,18 @@
+--    ________    ____  ____  ___    __
+--   / ____/ /   / __ \/ __ )/   |  / /
+--  / / __/ /   / / / / __  / /| | / /
+-- / /_/ / /___/ /_/ / /_/ / ___ |/ /___
+-- \____/_____/\____/_____/_/  |_/_____/
+--
+--  _    _____    ____  _______    ____  __    ___________
+-- | |  / /   |  / __ \/  _/   |  / __ )/ /   / ____/ ___/
+-- | | / / /| | / /_/ // // /| | / __  / /   / __/  \__ \
+-- | |/ / ___ |/ _, _// // ___ |/ /_/ / /___/ /___ ___/ /
+-- |___/_/  |_/_/ |_/___/_/  |_/_____/_____/_____//____/
+--
+Timestamp = 0
+
+--
 --    _____ ______________  ______
 --   / ___// ____/_  __/ / / / __ \
 --   \__ \/ __/   / / / / / / /_/ /
@@ -49,21 +64,74 @@ while establishingPipe do
 	end
 end
 
+local function readTheBuffer(table)
+	local length = 0
+	for i, value in ipairs(table) do
+		length = length + value
+	end
+	return length
+end
+
+local readBuffer = {}
 Pipe:read_start(function(err, chunk)
 	if err then
 		print("Read error:", err)
-	-- handle read error
+		-- handle read error
+		-- 16 bit length prefixed message in bytes
 	elseif chunk then
-		-- TODO: Deconstruct lua table into data and timestamp and discard if timestamp is too old
+		local readBufferLength = string.len(table.concat(readBuffer))
+		if readBufferLength >= 16 then
+			table.insert(readBuffer, chunk)
+			local messageLength = string.sub(table.concat(readBuffer), 1, 16)
+			-- If message is exactly the same size as the buffer
+			readBufferLength = string.len(table.concat(readBuffer))
+			if messageLength == readBufferLength then
+				local message = string.sub(table.concat(readBuffer), 17, tonumber(messageLength))
+				local json = vim.json.decode(message)
+				if json["timestamp"] > Timestamp then
+					vim.schedule(function()
+						vim.fn.setreg('"0', json["content"])
+					end)
+				end
+				-- else discard output
 
-		vim.schedule(function()
-			vim.fn.setreg('"0', chunk)
-		end)
-	-- handle data
-	else
-		-- handle disconnect
+				-- Create new table and assign it to the read buffer
+				local newTable = {}
+				readBuffer = newTable
+
+			-- if the read buffer is larger than the current message we need to handle the overflow
+			elseif messageLength < readBufferLength then
+				local readBufferString = table.concat(readBuffer)
+				local firstMessage = string.sub(readBufferString, 1, tonumber(messageLength))
+				local secondMessage = string.sub(readBufferString, messageLength + 1, readBufferLength)
+
+				local json = vim.json.decode(firstMessage)
+				if json["timestamp"] > Timestamp then
+					vim.schedule(function()
+						vim.fn.setreg('"0', json["content"])
+					end)
+					-- else just discard output and create new table
+					-- Create new table and assign it to the read buffer
+					local newTable = {}
+					table.insert(newTable, secondMessage)
+					readBuffer = newTable
+				elseif messageLength > readBufferLength then
+				end
+			end
+
+		-- handle data
+		else
+			-- handle disconnect
+		end
 	end
 end)
+
+-- append inkommnede data til readbuffer
+-- når du har lengde forstett
+-- hvis du lesr mer inn i readbuffer enn lengda oprett nytt table, legg til resternede informasjon.
+-- sett master bufferent til ponteren til den nye bufferen
+-- hvis bufferen er helt tom lag et nytt able og sett master bufferen til dene tomme
+--
 
 -- check if uuid exists in tmp directory
 -- if it does then try again
@@ -82,9 +150,10 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 		print("callback triggered")
 		vim.schedule(function()
 			local register = vim.fn.getreg('"0')
-			local timestamp = vim.fn.localtime()
+			Timestamp = vim.fn.localtime()
 
-			local packet = vim.fn.json_encode({ register = register, timestamp = timestamp })
+			local packet = vim.fn.json_encode({ register = register, timestamp = Timestamp })
+			print(packet)
 
 			Pipe:write(packet .. "\n")
 		end)
