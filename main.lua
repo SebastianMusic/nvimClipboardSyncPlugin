@@ -11,6 +11,9 @@
 -- |___/_/  |_/_/ |_/___/_/  |_/_____/_____/_____//____/
 --
 Timestamp = 0
+Pipename = ""
+Pipe = {}
+TMP_DIR = "/tmp/com.sebastianmusic.nvimclipboardsync/"
 
 --
 --    _____ ______________  ______
@@ -22,7 +25,6 @@ Timestamp = 0
 --
 local clipboardGroup = vim.api.nvim_create_augroup("clipboardGroup", { clear = true })
 local uv = vim.uv
-local TMP_DIR = "/tmp/com.sebastianmusic.nvimclipboardsync"
 local pipeNameLength = 40
 
 local function directoryExists(path)
@@ -44,13 +46,13 @@ local function randomString(length)
 	return table.concat(result)
 end
 
-local pipeName = randomString(pipeNameLength)
+PipeName = randomString(pipeNameLength)
 local establishingPipe = true
 while establishingPipe do
-	if vim.fn.filereadable(TMP_DIR .. pipeName) == 0 then
-		pipeName = randomString(pipeNameLength)
+	if vim.fn.filereadable(TMP_DIR .. PipeName) == 0 then
+		PipeName = randomString(pipeNameLength)
 	else
-		vim.system({ "mkfifo", TMP_DIR .. pipeName }, { text = true }, function(result)
+		vim.system({ "mkfifo", TMP_DIR .. PipeName }, { text = true }, function(result)
 			if result.code == 0 then
 				print("pipe created succsefully")
 			else
@@ -58,7 +60,7 @@ while establishingPipe do
 			end
 		end)
 		Pipe = uv.new_pipe(false)
-		Pipe:bind(TMP_DIR .. pipeName)
+		Pipe:bind(TMP_DIR .. PipeName)
 		establishingPipe = false
 		break
 	end
@@ -72,6 +74,53 @@ local function readTheBuffer(table)
 	return length
 end
 
+-- append inkommnede data til readbuffer
+-- når du har lengde forstett
+-- hvis du lesr mer inn i readbuffer enn lengda oprett nytt table, legg til resternede informasjon.
+-- sett master bufferent til ponteren til den nye bufferen
+-- hvis bufferen er helt tom lag et nytt able og sett master bufferen til dene tomme
+--
+
+-- check if uuid exists in tmp directory
+-- if it does then try again
+-- create a pipe with a name of the uuid
+-- store it in some variable
+
+--    ____  _   __   __  _____    _   ____ __
+--   / __ \/ | / /   \ \/ /   |  / | / / //_/
+--  / / / /  |/ /     \  / /| | /  |/ / ,<
+-- / /_/ / /|  /      / / ___ |/ /|  / /| |
+-- \____/_/ |_/      /_/_/  |_/_/ |_/_/ |_|
+
+vim.api.nvim_create_autocmd("TextYankPost", {
+	group = clipboardGroup,
+	callback = function()
+		print("callback triggered")
+		vim.schedule(function()
+			local register = vim.fn.getreg('"0')
+			Timestamp = vim.fn.localtime()
+
+			local packet = vim.fn.json_encode({ register = register, timestamp = Timestamp })
+			print(packet)
+
+			Pipe:write(packet .. "\n")
+		end)
+	end,
+})
+-- get current time
+-- save time on yank
+-- Create Json structure with time and clipboard contents
+-- send to daemon
+--    ____  _   __   ____  _________    ____
+--   / __ \/ | / /  / __ \/ ____/   |  / __ \
+--  / / / /  |/ /  / /_/ / __/ / /| | / / / /
+-- / /_/ / /|  /  / _, _/ /___/ ___ |/ /_/ /
+-- \____/_/ |_/  /_/ |_/_____/_/  |_/_____/
+
+-- check if timestamp
+-- check if the contents are newer thank last yank
+-- if they are newer set the clipboard register to the contents if not discard them
+--
 local readBuffer = {}
 Pipe:read_start(function(err, chunk)
 	if err then
@@ -125,55 +174,6 @@ Pipe:read_start(function(err, chunk)
 		end
 	end
 end)
-
--- append inkommnede data til readbuffer
--- når du har lengde forstett
--- hvis du lesr mer inn i readbuffer enn lengda oprett nytt table, legg til resternede informasjon.
--- sett master bufferent til ponteren til den nye bufferen
--- hvis bufferen er helt tom lag et nytt able og sett master bufferen til dene tomme
---
-
--- check if uuid exists in tmp directory
--- if it does then try again
--- create a pipe with a name of the uuid
--- store it in some variable
-
---    ____  _   __   __  _____    _   ____ __
---   / __ \/ | / /   \ \/ /   |  / | / / //_/
---  / / / /  |/ /     \  / /| | /  |/ / ,<
--- / /_/ / /|  /      / / ___ |/ /|  / /| |
--- \____/_/ |_/      /_/_/  |_/_/ |_/_/ |_|
-
-vim.api.nvim_create_autocmd("TextYankPost", {
-	group = clipboardGroup,
-	callback = function()
-		print("callback triggered")
-		vim.schedule(function()
-			local register = vim.fn.getreg('"0')
-			Timestamp = vim.fn.localtime()
-
-			local packet = vim.fn.json_encode({ register = register, timestamp = Timestamp })
-			print(packet)
-
-			Pipe:write(packet .. "\n")
-		end)
-	end,
-})
--- get current time
--- save time on yank
--- Create Json structure with time and clipboard contents
--- send to daemon
---    ____  _   __   ____  _________    ____
---   / __ \/ | / /  / __ \/ ____/   |  / __ \
---  / / / /  |/ /  / /_/ / __/ / /| | / / / /
--- / /_/ / /|  /  / _, _/ /___/ ___ |/ /_/ /
--- \____/_/ |_/  /_/ |_/_____/_/  |_/_____/
-
--- check if timestamp
--- check if the contents are newer thank last yank
--- if they are newer set the clipboard register to the contents if not discard them
---
---
 --    ________    _________    _   __   __  ______
 --   / ____/ /   / ____/   |  / | / /  / / / / __ \
 --  / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
@@ -181,3 +181,16 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 -- \____/_____/_____/_/  |_/_/ |_/   \____/_/
 --
 -- Remove named pipe from tmp diretory
+vim.api.nvim_create_autocmd("VimLeavePre", {
+	group = clipboardGroup,
+	callback = function()
+		print("leaving neovim cleaning up")
+
+		if type(Pipe) == "uv_pipe_t" then
+			Pipe:close()
+			local result = vim.system({ "rm", TMP_DIR .. PipeName })
+		else
+			print("pipe was not type uv_pipe_t it was instead: ", type(Pipe))
+		end
+	end,
+})
