@@ -37,7 +37,6 @@ if directoryExists(TMP_DIR) ~= true then
 	os.exit(1)
 end
 
--- function to generate random string
 local function randomString(length)
 	local result = {}
 	for _ = 1, length do
@@ -46,25 +45,16 @@ local function randomString(length)
 	return table.concat(result)
 end
 
-PipeName = randomString(pipeNameLength)
-local establishingPipe = true
-while establishingPipe do
-	if vim.fn.filereadable(TMP_DIR .. PipeName) == 0 then
-		PipeName = randomString(pipeNameLength)
+local serverListeningPipe = uv.new_pipe(false)
+local Pipe = uv.new_pipe(false)
+
+local connectHandle, err = Pipe:connect(TMP_DIR .. "listeningPipe", function(err)
+	if err then
+		print("failed to connect: ", err)
 	else
-		vim.system({ "mkfifo", TMP_DIR .. PipeName }, { text = true }, function(result)
-			if result.code == 0 then
-				print("pipe created succsefully")
-			else
-				print("error: ", result.stderr)
-			end
-		end)
-		Pipe = uv.new_pipe(false)
-		Pipe:bind(TMP_DIR .. PipeName)
-		establishingPipe = false
-		break
+		print("connection succesfull")
 	end
-end
+end)
 
 local function readTheBuffer(table)
 	local length = 0
@@ -181,16 +171,16 @@ end)
 -- \____/_____/_____/_/  |_/_/ |_/   \____/_/
 --
 -- Remove named pipe from tmp diretory
-vim.api.nvim_create_autocmd("VimLeavePre", {
-	group = clipboardGroup,
-	callback = function()
-		print("leaving neovim cleaning up")
-
-		if type(Pipe) == "uv_pipe_t" then
-			Pipe:close()
-			local result = vim.system({ "rm", TMP_DIR .. PipeName })
-		else
-			print("pipe was not type uv_pipe_t it was instead: ", type(Pipe))
-		end
-	end,
-})
+-- vim.api.nvim_create_autocmd("VimLeavePre", {
+-- 	group = clipboardGroup,
+-- 	callback = function()
+-- 		print("leaving neovim cleaning up")
+--
+-- 		if type(Pipe) == "uv_pipe_t" then
+-- 			Pipe:close()
+-- 			local result = vim.system({ "rm", TMP_DIR .. PipeName })
+-- 		else
+-- 			print("pipe was not type uv_pipe_t it was instead: ", type(Pipe))
+-- 		end
+-- 	end,
+-- })
