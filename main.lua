@@ -90,7 +90,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 			local register = vim.fn.getreg('"0')
 			Timestamp = vim.fn.localtime()
 
-			local packet = vim.fn.json_encode({ register = register, timestamp = Timestamp })
+			local packet = vim.fn.json_encode({ REGISTER = register, TIMESTAMP = Timestamp })
 			print(packet)
 
 			Pipe:write(packet .. "\n")
