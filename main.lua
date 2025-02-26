@@ -1,3 +1,4 @@
+-- TODO: Timer precission is not precise enough leading to yanks being discarded if copied in quick succession
 --    ________    ____  ____  ___    __
 --   / ____/ /   / __ \/ __ )/   |  / /
 --  / / __/ /   / / / / __  / /| | / /
@@ -25,7 +26,6 @@ TMP_DIR = "/tmp/com.sebastianmusic.nvimclipboardsync/"
 --
 local clipboardGroup = vim.api.nvim_create_augroup("clipboardGroup", { clear = true })
 local uv = vim.uv
-local pipeNameLength = 40
 
 local function directoryExists(path)
 	return vim.fn.isdirectory(path) == 1
@@ -37,18 +37,9 @@ if directoryExists(TMP_DIR) ~= true then
 	os.exit(1)
 end
 
-local function randomString(length)
-	local result = {}
-	for _ = 1, length do
-		table.insert(result, string.char(math.random(97, 122)))
-	end
-	return table.concat(result)
-end
-
-local serverListeningPipe = uv.new_pipe(false)
 local Pipe = uv.new_pipe(false)
 
-local connectHandle, err = Pipe:connect(TMP_DIR .. "listeningPipe", function(err)
+Pipe:connect(TMP_DIR .. "listeningPipe", function(err)
 	if err then
 		print("failed to connect: ", err)
 	else
@@ -118,56 +109,62 @@ Pipe:read_start(function(err, chunk)
 		-- handle read error
 		-- 16 bit length prefixed message in bytes
 	elseif chunk then
-		local readBufferLength = string.len(table.concat(readBuffer))
-		if readBufferLength >= 16 then
-			table.insert(readBuffer, chunk)
-			local messageLength = string.sub(table.concat(readBuffer), 1, 16)
-			-- If message is exactly the same size as the buffer
-			readBufferLength = string.len(table.concat(readBuffer))
-			if messageLength == readBufferLength then
-				local message = string.sub(table.concat(readBuffer), 17, tonumber(messageLength))
-				local json = vim.json.decode(message)
-				if json["timestamp"] > Timestamp then
-					vim.schedule(function()
-						vim.fn.setreg('"0', json["content"])
-					end)
-				end
-				-- else discard output
+		print(chunk)
+		local json = vim.json.decode(chunk)
 
-				-- Create new table and assign it to the read buffer
-				local newTable = {}
-				readBuffer = newTable
-
-			-- if the read buffer is larger than the current message we need to handle the overflow
-			elseif messageLength < readBufferLength then
-				local readBufferString = table.concat(readBuffer)
-				local firstMessage = string.sub(readBufferString, 1, tonumber(messageLength))
-				local secondMessage = string.sub(readBufferString, messageLength + 1, readBufferLength)
-
-				local json = vim.json.decode(firstMessage)
-				if json["timestamp"] > Timestamp then
-					vim.schedule(function()
-						vim.fn.setreg('"0', json["content"])
-					end)
-					-- else just discard output and create new table
-					-- Create new table and assign it to the read buffer
-					local newTable = {}
-					table.insert(newTable, secondMessage)
-					readBuffer = newTable
-				elseif messageLength > readBufferLength then
-				end
-			end
-
-		-- handle data
-		else
-			-- handle disconnect
-		end
+		vim.schedule(function()
+			vim.fn.setreg('"0', json["REGISTER"])
+		end)
 	end
 end)
---    ________    _________    _   __   __  ______
---   / ____/ /   / ____/   |  / | / /  / / / / __ \
---  / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
--- / /___/ /___/ /___/ ___ |/ /|  /  / /_/ / ____/
+--
+-- 		local readBufferLength = string.len(table.concat(readBuffer))
+-- 		if readBufferLength >= 16 then
+-- 			table.insert(readBuffer, chunk)
+-- 			local messageLength = string.sub(table.concat(readBuffer), 1, 16)
+-- 			-- If message is exactly the same size as the buffer
+-- 			readBufferLength = string.len(table.concat(readBuffer))
+-- 			if messageLength == readBufferLength then
+-- 				local message = string.sub(table.concat(readBuffer), 17, tonumber(messageLength))
+-- 				local json = vim.json.decode(message)
+-- 				if json["timestamp"] > Timestamp then
+-- 				end
+-- 				-- else discard output
+--
+-- 				-- Create new table and assign it to the read buffer
+-- 				local newTable = {}
+-- 				readBuffer = newTable
+--
+-- 			-- if the read buffer is larger than the current message we need to handle the overflow
+-- 			elseif messageLength < readBufferLength then
+-- 				local readBufferString = table.concat(readBuffer)
+-- 				local firstMessage = string.sub(readBufferString, 1, tonumber(messageLength))
+-- 				local secondMessage = string.sub(readBufferString, messageLength + 1, readBufferLength)
+--
+-- 				local json = vim.json.decode(firstMessage)
+-- 				if json["timestamp"] > Timestamp then
+-- 					vim.schedule(function()
+-- 						vim.fn.setreg('"0', json["content"])
+-- 					end)
+-- 					-- else just discard output and create new table
+-- 					-- Create new table and assign it to the read buffer
+-- 					local newTable = {}
+-- 					table.insert(newTable, secondMessage)
+-- 					readBuffer = newTable
+-- 				elseif messageLength > readBufferLength then
+-- 				end
+-- 			end
+--
+-- 		-- handle data
+-- 		else
+-- 			-- handle disconnect
+-- 		end
+-- 	end
+-- end)
+-- --    ________    _________    _   __   __  ______
+-- --   / ____/ /   / ____/   |  / | / /  / / / / __ \
+-- --  / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
+-- -- / /___/ /___/ /___/ ___ |/ /|  /  / /_/ / ____/
 -- \____/_____/_____/_/  |_/_/ |_/   \____/_/
 --
 -- Remove named pipe from tmp diretory
