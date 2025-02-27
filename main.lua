@@ -161,23 +161,16 @@ end)
 -- 		end
 -- 	end
 -- end)
--- --    ________    _________    _   __   __  ______
--- --   / ____/ /   / ____/   |  / | / /  / / / / __ \
--- --  / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
--- -- / /___/ /___/ /___/ ___ |/ /|  /  / /_/ / ____/
+--     ________    _________    _   __   __  ______
+--    / ____/ /   / ____/   |  / | / /  / / / / __ \
+--   / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
+--  / /___/ /___/ /___/ ___ |/ /|  /  / /_/ / ____/
 -- \____/_____/_____/_/  |_/_/ |_/   \____/_/
 --
--- Remove named pipe from tmp diretory
--- vim.api.nvim_create_autocmd("VimLeavePre", {
--- 	group = clipboardGroup,
--- 	callback = function()
--- 		print("leaving neovim cleaning up")
---
--- 		if type(Pipe) == "uv_pipe_t" then
--- 			Pipe:close()
--- 			local result = vim.system({ "rm", TMP_DIR .. PipeName })
--- 		else
--- 			print("pipe was not type uv_pipe_t it was instead: ", type(Pipe))
--- 		end
--- 	end,
--- })
+-- Close pipe automaticly on exit
+vim.api.nvim_create_autocmd("VimLeavePre", {
+	callback = function()
+		Pipe:read_stop()
+		Pipe:close()
+	end,
+})
