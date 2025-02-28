@@ -1,7 +1,4 @@
 -- TODO: Timer precission is not precise enough leading to yanks being discarded if copied in quick succession
---
-
--- TODO: Parse data before sending removing extranious beginning and ending spaces and such for a cleaner copy possibly making it a setting for users to turn on and off
 --    ________    ____  ____  ___    __
 --   / ____/ /   / __ \/ __ )/   |  / /
 --  / / __/ /   / / / / __  / /| | / /
@@ -14,7 +11,6 @@
 -- | |/ / ___ |/ _, _// // ___ |/ /_/ / /___/ /___ ___/ /
 -- |___/_/  |_/_/ |_/___/_/  |_/_____/_____/_____//____/
 --
-
 Timestamp = 0
 Pipename = ""
 Pipe = {}
@@ -51,32 +47,16 @@ Pipe:connect(TMP_DIR .. "listeningPipe", function(err)
 	end
 end)
 
-local function readTheBuffer(table)
-	local length = 0
-	for i, value in ipairs(table) do
-		length = length + value
-	end
-	return length
-end
-
--- append inkommnede data til readbuffer
--- når du har lengde forstett
--- hvis du lesr mer inn i readbuffer enn lengda oprett nytt table, legg til resternede informasjon.
--- sett master bufferent til ponteren til den nye bufferen
--- hvis bufferen er helt tom lag et nytt able og sett master bufferen til dene tomme
---
-
--- check if uuid exists in tmp directory
--- if it does then try again
--- create a pipe with a name of the uuid
--- store it in some variable
-
 --    ____  _   __   __  _____    _   ____ __
 --   / __ \/ | / /   \ \/ /   |  / | / / //_/
 --  / / / /  |/ /     \  / /| | /  |/ / ,<
 -- / /_/ / /|  /      / / ___ |/ /|  / /| |
 -- \____/_/ |_/      /_/_/  |_/_/ |_/_/ |_|
 
+-- get current time
+-- save time on yank
+-- Create Json structure with time and clipboard contents
+-- send to daemon
 vim.api.nvim_create_autocmd("TextYankPost", {
 	group = clipboardGroup,
 	callback = function()
@@ -92,10 +72,6 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 		end)
 	end,
 })
--- get current time
--- save time on yank
--- Create Json structure with time and clipboard contents
--- send to daemon
 --    ____  _   __   ____  _________    ____
 --   / __ \/ | / /  / __ \/ ____/   |  / __ \
 --  / / / /  |/ /  / /_/ / __/ / /| | / / / /
@@ -121,55 +97,11 @@ Pipe:read_start(function(err, chunk)
 		end)
 	end
 end)
---
--- 		local readBufferLength = string.len(table.concat(readBuffer))
--- 		if readBufferLength >= 16 then
--- 			table.insert(readBuffer, chunk)
--- 			local messageLength = string.sub(table.concat(readBuffer), 1, 16)
--- 			-- If message is exactly the same size as the buffer
--- 			readBufferLength = string.len(table.concat(readBuffer))
--- 			if messageLength == readBufferLength then
--- 				local message = string.sub(table.concat(readBuffer), 17, tonumber(messageLength))
--- 				local json = vim.json.decode(message)
--- 				if json["timestamp"] > Timestamp then
--- 				end
--- 				-- else discard output
---
--- 				-- Create new table and assign it to the read buffer
--- 				local newTable = {}
--- 				readBuffer = newTable
---
--- 			-- if the read buffer is larger than the current message we need to handle the overflow
--- 			elseif messageLength < readBufferLength then
--- 				local readBufferString = table.concat(readBuffer)
--- 				local firstMessage = string.sub(readBufferString, 1, tonumber(messageLength))
--- 				local secondMessage = string.sub(readBufferString, messageLength + 1, readBufferLength)
---
--- 				local json = vim.json.decode(firstMessage)
--- 				if json["timestamp"] > Timestamp then
--- 					vim.schedule(function()
--- 						vim.fn.setreg('"0', json["content"])
--- 					end)
--- 					-- else just discard output and create new table
--- 					-- Create new table and assign it to the read buffer
--- 					local newTable = {}
--- 					table.insert(newTable, secondMessage)
--- 					readBuffer = newTable
--- 				elseif messageLength > readBufferLength then
--- 				end
--- 			end
---
--- 		-- handle data
--- 		else
--- 			-- handle disconnect
--- 		end
--- 	end
--- end)
 --     ________    _________    _   __   __  ______
 --    / ____/ /   / ____/   |  / | / /  / / / / __ \
 --   / /   / /   / __/ / /| | /  |/ /  / / / / /_/ /
 --  / /___/ /___/ /___/ ___ |/ /|  /  / /_/ / ____/
--- \____/_____/_____/_/  |_/_/ |_/   \____/_/
+--  \____/_____/_____/_/  |_/_/ |_/   \____/_/
 --
 -- Close pipe automaticly on exit
 vim.api.nvim_create_autocmd("VimLeavePre", {
