@@ -85,8 +85,7 @@ function M.setup(opts)
 			vim.schedule(function()
 				local register = vim.fn.getreg('"0')
 				local sec, usec = vim.loop.gettimeofday()
-				local timestamp = string.format("%d%06d", sec, usec)
-				Timestamp = tonumber(timestamp)
+				local Timestamp = sec * 1000000 + usec -- Ensure it remains an integer
 
 				local packet = vim.fn.json_encode({ REGISTER = register, TIMESTAMP = Timestamp })
 				debugPrint(packet, false)
