@@ -84,8 +84,9 @@ function M.setup(opts)
 			debugPrint("Callback triggered", false)
 			vim.schedule(function()
 				local register = vim.fn.getreg('"0')
+
 				local sec, usec = vim.loop.gettimeofday()
-				local Timestamp = tonumber(sec) * 1000000.0 + tonumber(usec) -- Force float conversion
+				local Timestamp = string.format("%d%06d", sec, usec) -- Format as a continuous number string
 
 				local packet = vim.fn.json_encode({ REGISTER = register, TIMESTAMP = Timestamp })
 				debugPrint(packet, false)
