@@ -15,7 +15,7 @@ local M = {}
 
 M.config = {
 	TMP_DIR = "/tmp/com.sebastianmusic.nvimclipboardsync/",
-	debug = 1,
+	debug = true,
 }
 
 --
