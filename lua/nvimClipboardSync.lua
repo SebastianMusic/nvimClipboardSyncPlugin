@@ -33,14 +33,19 @@ function M.setup(opts)
 	local uv = vim.uv
 
 	local function debugPrint(message, isError)
-		if debug == true and isError == true then
-			vim.api.nvim_err_write(message)
-		elseif debug == true and isError == false then
+		if type(M.config.debug) ~= "boolean" then
+			vim.schedule(function()
+				vim.api.nvim_err_write(
+					"debug parameter in nvimClipboardSync has invalid value in configuration, it must be either 'true' or 'false'"
+				)
+			end)
+			return
+		elseif M.config.debug == true and isError == true then
+			vim.schedule(function()
+				vim.api.nvim_err_write(message)
+			end)
+		elseif M.config.debug == true and isError == false then
 			print(message)
-		elseif debug ~= true or debug ~= false then
-			vim.api.nvim_err_write(
-				"debug parameter in nvimClipboardSync has invalid value in configuration, it must be either 'true' or 'false'"
-			)
 		end
 	end
 
