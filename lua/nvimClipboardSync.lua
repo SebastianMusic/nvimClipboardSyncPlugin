@@ -1,3 +1,4 @@
+--   TODO: Expose a command to retry to connect to daemon without having to reopen nvim
 --    ________    ____  ____  ___    __
 --   / ____/ /   / __ \/ __ )/   |  / /
 --  / / __/ /   / / / / __  / /| | / /

@@ -27,13 +27,14 @@ This plugin is a companion plugin to the [daemon](https://github.com/SebastianMu
 You can copy the following configuration
 ```lua
 return {
-'SebastianMusic/nvimClipboardSyncPlugin'
+  'sebastianmusic/nvimClipboardSyncPlugin',
   lazy = false,
   config = function()
-    require 'nvimClipboardSyncPlugin' -- Ensure it loads
+    require('nvimClipboardSync').setup { debug = true }
   end,
 }
 ```
+
 ### how to use
 The nvim plugin is fairly straightforward simply start neovim and start yanking.
 if its not working its likely it is something with the [daemon](https://github.com/SebastianMusic/nvimClipboardSyncDaemonCpp)
