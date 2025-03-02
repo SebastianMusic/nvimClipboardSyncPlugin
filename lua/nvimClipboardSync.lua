@@ -1,4 +1,3 @@
--- TODO: Timer precission is not precise enough leading to yanks being discarded if copied in quick succession
 --    ________    ____  ____  ___    __
 --   / ____/ /   / __ \/ __ )/   |  / /
 --  / / __/ /   / / / / __  / /| | / /
@@ -85,7 +84,8 @@ function M.setup(opts)
 			debugPrint("Callback triggered", false)
 			vim.schedule(function()
 				local register = vim.fn.getreg('"0')
-				Timestamp = vim.fn.localtime()
+				local sec, usec = vim.loop.gettimeofday()
+				local Timestamp = string.format("%d%06d", sec, usec)
 
 				local packet = vim.fn.json_encode({ REGISTER = register, TIMESTAMP = Timestamp })
 				debugPrint(packet, false)
