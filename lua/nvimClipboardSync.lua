@@ -32,6 +32,18 @@ function M.setup(opts)
 
 	local uv = vim.uv
 
+	local function debugPrint(message, isError)
+		if debug == true and isError == true then
+			vim.api.nvim_err_write(message)
+		elseif debug == true and isError == false then
+			print(message)
+		elseif debug ~= true or debug ~= false then
+			vim.api.nvim_err_write(
+				"debug parameter in nvimClipboardSync has invalid value in configuration, it must be either 'true' or 'false'"
+			)
+		end
+	end
+
 	local function directoryExists(path)
 		return vim.fn.isdirectory(path) == 1
 	end
@@ -39,7 +51,7 @@ function M.setup(opts)
 	-- Check if tmp directory exits
 	if directoryExists(M.config.TMP_DIR) ~= true then
 		if M.config.debug == true then
-			vim.api.nvim_err_write("Error tmp directory does not exists, make sure daemon is running")
+			debugPrint("Error TMP directory does not exist, make sure daemon is running", true)
 		end
 	end
 
@@ -47,11 +59,9 @@ function M.setup(opts)
 
 	Pipe:connect(M.config.TMP_DIR .. "listeningPipe", function(err)
 		if err then
-			if M.config.debug == true then
-				print("failed to connect: ", err)
-			end
+			debugPrint("Failed to connect: " .. err, true)
 		else
-			print("connection succesfull")
+			debugPrint("Connection succesfull", false)
 		end
 	end)
 
@@ -67,13 +77,13 @@ function M.setup(opts)
 	-- send to daemon
 	vim.api.nvim_create_autocmd("TextYankPost", {
 		callback = function()
-			print("callback triggered")
+			debugPrint("Callback triggered", false)
 			vim.schedule(function()
 				local register = vim.fn.getreg('"0')
 				Timestamp = vim.fn.localtime()
 
 				local packet = vim.fn.json_encode({ REGISTER = register, TIMESTAMP = Timestamp })
-				print(packet)
+				debugPrint(packet, false)
 
 				Pipe:write(packet .. "\n")
 			end)
@@ -91,11 +101,11 @@ function M.setup(opts)
 	--
 	Pipe:read_start(function(err, chunk)
 		if err then
-			print("Read error:", err)
+			debugPrint("Read error: " .. err, true)
 		-- handle read error
 		-- 16 bit length prefixed message in bytes
 		elseif chunk then
-			print(chunk)
+			debugPrint(chunk, false)
 			local json = vim.json.decode(chunk)
 
 			vim.schedule(function()
