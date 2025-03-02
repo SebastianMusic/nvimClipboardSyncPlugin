@@ -38,7 +38,7 @@ function M.setup(opts)
 
 	-- Check if tmp directory exits
 	if directoryExists(M.config.TMP_DIR) ~= true then
-		if M.config.debug == 1 then
+		if M.config.debug == true then
 			vim.api.nvim_err_write("Error tmp directory does not exists, make sure daemon is running")
 		end
 	end
@@ -47,7 +47,7 @@ function M.setup(opts)
 
 	Pipe:connect(M.config.TMP_DIR .. "listeningPipe", function(err)
 		if err then
-			if M.config.debug == 1 then
+			if M.config.debug == true then
 				print("failed to connect: ", err)
 			end
 		else
