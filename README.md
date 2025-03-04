@@ -42,8 +42,6 @@ if its not working its likely it is something with the [daemon](https://github.c
 # TODOS
 - Currently there is no issue with the setting of registers but there might be
 bugs for very large registers this must be investigated
-- add options to toggle specifc behaviour such as 
-    - display or not display error messages
 
 
 
